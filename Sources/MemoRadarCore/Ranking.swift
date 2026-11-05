@@ -1,7 +1,7 @@
 import Foundation
 
 public enum RowKind: Sendable, Hashable {
-    case mcps, vscode, claudeTerminal, app(String), macOSServices, others
+    case mcps, vscode, claudeTerminal, app(String), appExtensions, macOSServices, others
 }
 
 public struct RankingRow: Sendable, Equatable {
@@ -21,7 +21,7 @@ public struct RankingRow: Sendable, Equatable {
 }
 
 /// Cada processo entra em uma única linha, na ordem: MCP, sessão de terminal,
-/// VS Code, app, serviço do macOS e, por fim, "Outros".
+/// VS Code, extensão de app, app, serviço do macOS e, por fim, "Outros".
 public enum Ranking {
     private static let displayNames = ["Claude": "Claude Desktop"]
 
@@ -52,6 +52,13 @@ public enum Ranking {
                 add(process, .claudeTerminal, "Claude Code no terminal")
             } else if underVSCode.contains(process.pid) {
                 add(process, .vscode, "VS Code")
+            } else if process.executablePath.contains(".appex/") {
+                // O macOS mantém as extensões vivas: fechar o app não as encerra.
+                if process.executablePath.hasPrefix("/System/") {
+                    add(process, .macOSServices, "Serviços do macOS")
+                } else {
+                    add(process, .appExtensions, "Extensões de apps")
+                }
             } else if let bundle = outermostBundleName(process.executablePath) {
                 add(process, .app(bundle), displayNames[bundle] ?? bundle,
                     closable: !process.executablePath.hasPrefix("/System/"))

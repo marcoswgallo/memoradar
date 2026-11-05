@@ -6,6 +6,7 @@ public struct PendingClose: Sendable, Equatable {
     public var target: CloseTarget
     public var identities: [ProcessIdentity]
     public var mainAppCandidates: [Int32]
+    private var mainExecutablePaths: Set<String>
 
     public init(target: CloseTarget, dashboard: Dashboard) {
         self.target = target
@@ -23,8 +24,17 @@ public struct PendingClose: Sendable, Equatable {
         identities = members.map { ProcessIdentity(pid: $0.pid, startTime: $0.startTime) }
 
         // Processos cujo pai está fora do app. Os auxiliares nunca são fechados no lugar dele.
-        mainAppCandidates = members.filter { !wanted.contains($0.ppid) }
-            .sorted { $0.startTime < $1.startTime }
-            .map(\.pid)
+        let roots = members.filter { !wanted.contains($0.ppid) }.sorted { $0.startTime < $1.startTime }
+        mainAppCandidates = roots.map(\.pid)
+        mainExecutablePaths = Set(roots.map(\.executablePath))
+    }
+
+    /// Depois de fechar: existe um processo novo do mesmo programa?
+    public func wasReopened(current: [ProcessSnapshot]) -> Bool {
+        let original = Set(identities)
+        return current.contains { process in
+            mainExecutablePaths.contains(process.executablePath)
+                && !original.contains(ProcessIdentity(pid: process.pid, startTime: process.startTime))
+        }
     }
 }

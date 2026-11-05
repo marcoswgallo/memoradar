@@ -27,7 +27,7 @@ public struct Confirmation: Sendable, Equatable {
 }
 
 public enum CloseOutcome: Sendable, Equatable {
-    case closed, stillOpen, failed(String)
+    case closed, stillOpen, reopened, failed(String)
 }
 
 public func closeOutcome(stillRunningAfterWait: Bool, error: String?) -> CloseOutcome {

@@ -23,6 +23,5 @@ struct SettingsView: View {
             }
         }
         .padding(14)
-        .frame(width: 360)
     }
 }

@@ -51,6 +51,30 @@ private func dashboard(_ processes: [ProcessSnapshot]) -> Dashboard {
         #expect(Set(pending.identities.map(\.pid)) == [30, 40])
     }
 
+    private func foo(_ pid: Int32, start: Date = clicked) -> ProcessSnapshot {
+        proc(pid, start: start, exe: "/Applications/Foo.app/Contents/MacOS/Foo")
+    }
+
+    @Test func newProcessWithSameExecutableMeansReopened() {
+        let pending = PendingClose(target: .app(name: "Foo", pids: [5], bytes: 1), dashboard: dashboard([foo(5)]))
+        #expect(pending.wasReopened(current: [foo(9, start: clicked.addingTimeInterval(4))]))
+    }
+
+    @Test func sameOldProcessIsNotReopened() {
+        let pending = PendingClose(target: .app(name: "Foo", pids: [5], bytes: 1), dashboard: dashboard([foo(5)]))
+        #expect(!pending.wasReopened(current: [foo(5)]))
+    }
+
+    @Test func noProcessIsNotReopened() {
+        let pending = PendingClose(target: .app(name: "Foo", pids: [5], bytes: 1), dashboard: dashboard([foo(5)]))
+        #expect(!pending.wasReopened(current: []))
+    }
+
+    @Test func otherAppIsNotReopened() {
+        let pending = PendingClose(target: .app(name: "Foo", pids: [5], bytes: 1), dashboard: dashboard([foo(5)]))
+        #expect(!pending.wasReopened(current: [proc(9, exe: "/Applications/Bar.app/Contents/MacOS/Bar")]))
+    }
+
     @Test func mainAppCandidatesAreRootsOldestFirst() {
         let processes = [
             proc(70, parent: 60, start: clicked.addingTimeInterval(5)),

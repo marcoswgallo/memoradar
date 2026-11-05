@@ -11,7 +11,6 @@ final class PanelState {
     var pendingClose: PendingClose?
     var isClosing = false
     var closeResult: String?
-    var contentHeight: CGFloat = 320
 
     func toggle(_ key: String) {
         if expanded.contains(key) { expanded.remove(key) } else { expanded.insert(key) }
@@ -29,6 +28,7 @@ final class AppModel {
     private let notifier = Notifier()
     private let closer = Closer()
     private var ledger = NotificationLedger()
+    private var askedNotificationPermission = false
     private var loop: Task<Void, Never>?
 
     private static let closedInterval: Duration = .seconds(10)
@@ -41,8 +41,8 @@ final class AppModel {
 
     func start() {
         guard loop == nil else { return }
+        requestNotificationPermissionOnce()
         loop = Task { [weak self] in
-            if self?.settings.notificationsEnabled == true { await self?.notifier.requestPermission() }
             while !Task.isCancelled {
                 await self?.refresh()
                 let interval = self?.panelIsOpen == true ? Self.openInterval : Self.closedInterval
@@ -51,7 +51,15 @@ final class AppModel {
         }
     }
 
+    /// Fora do ciclo de leitura: o painel não pode ficar esperando a resposta do diálogo.
+    private func requestNotificationPermissionOnce() {
+        guard !askedNotificationPermission, settings.notificationsEnabled else { return }
+        askedNotificationPermission = true
+        Task { await notifier.requestPermission() }
+    }
+
     func setPanelOpen(_ open: Bool) {
+        guard open != panelIsOpen else { return }
         panelIsOpen = open
         if !open, !panel.isClosing {
             panel.pendingClose = nil
@@ -87,6 +95,7 @@ final class AppModel {
         switch outcome {
         case .closed: "Fechado."
         case .stillOpen: "Continua aberto. Pode estar aguardando você salvar um arquivo."
+        case .reopened: "Fechou, mas o app abriu de novo logo em seguida."
         case let .failed(reason): reason
         }
     }

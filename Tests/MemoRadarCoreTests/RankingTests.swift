@@ -113,6 +113,30 @@ private func row(_ rows: [RankingRow], _ kind: RowKind) -> RankingRow? {
         #expect(Ranking.build(processes: [proc(10, exe: exe)], sessions: [], mcps: [])[0].kind == .app("Dock"))
     }
 
+    @Test func appExtensionGoesToOwnRow() {
+        let exe = "/Applications/Foo.app/Contents/PlugIns/Servico.appex/Contents/MacOS/Servico"
+        let rows = Ranking.build(processes: [proc(10, exe: exe)], sessions: [], mcps: [])
+        #expect(rows[0].kind == .appExtensions)
+        #expect(rows[0].title == "Extensões de apps")
+        #expect(!rows[0].closable)
+    }
+
+    @Test func appRowDoesNotCountItsExtensions() {
+        let processes = [
+            proc(1, exe: "/Applications/Foo.app/Contents/MacOS/Foo", bytes: 100),
+            proc(2, exe: "/Applications/Foo.app/Contents/PlugIns/Servico.appex/Contents/MacOS/Servico", bytes: 40),
+        ]
+        let rows = Ranking.build(processes: processes, sessions: [], mcps: [])
+        #expect(row(rows, .app("Foo"))?.bytes == 100)
+        #expect(row(rows, .app("Foo"))?.pids == [1])
+        #expect(row(rows, .appExtensions)?.bytes == 40)
+    }
+
+    @Test func systemAppExtensionStaysInMacOSServices() {
+        let exe = "/System/Applications/Foo.app/Contents/PlugIns/Servico.appex/Contents/MacOS/Servico"
+        #expect(Ranking.build(processes: [proc(10, exe: exe)], sessions: [], mcps: [])[0].kind == .macOSServices)
+    }
+
     @Test func rowsSortedByBytesDescending() {
         let processes = [
             proc(1, exe: "/Applications/A.app/Contents/MacOS/A", bytes: 5),

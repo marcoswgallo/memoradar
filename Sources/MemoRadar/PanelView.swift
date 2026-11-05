@@ -5,7 +5,8 @@ import SwiftUI
 struct PanelView: View {
     let model: AppModel
 
-    private static let maximumHeight: CGFloat = 560
+    private static let width: CGFloat = 360
+    private static let height: CGFloat = 600
 
     var body: some View {
         Group {
@@ -23,17 +24,13 @@ struct PanelView: View {
             } else {
                 VStack(alignment: .leading, spacing: 0) {
                     if let dashboard = model.dashboard {
-                        // Uma ScrollView sozinha encolhe dentro do MenuBarExtra: a altura vem do conteúdo.
                         ScrollView {
                             PanelContent(dashboard: dashboard, panel: model.panel, onClose: { model.requestClose($0) })
                                 .padding(14)
-                                .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { height in
-                                    model.panel.contentHeight = height
-                                }
                         }
-                        .frame(height: min(model.panel.contentHeight, Self.maximumHeight))
                     } else {
                         Text("Lendo a memória…").foregroundStyle(.secondary).padding(14)
+                        Spacer(minLength: 0)
                     }
                     Divider()
                     HStack {
@@ -45,11 +42,12 @@ struct PanelView: View {
                     .foregroundStyle(.secondary)
                     .padding(10)
                 }
-                .frame(width: 360)
             }
         }
-        .onAppear { model.setPanelOpen(true) }
-        .onDisappear { model.setPanelOpen(false) }
+        // Altura fixa: se o tamanho mudar, o MenuBarExtra afasta a janela do ícone.
+        .frame(width: Self.width, height: Self.height, alignment: .top)
+        .background(Color(nsColor: .windowBackgroundColor))
+        .background(PanelVisibilityObserver { model.setPanelOpen($0) })
     }
 }
 

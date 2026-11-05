@@ -4,6 +4,7 @@ import MemoRadarCore
 @MainActor
 final class Closer {
     private static let waitSeconds: TimeInterval = 5
+    private static let reopenWait: Duration = .seconds(3)
 
     func perform(_ pending: PendingClose, current: Dashboard) async -> CloseOutcome {
         switch pending.target {
@@ -29,7 +30,10 @@ final class Closer {
         while !app.isTerminated, Date() < deadline {
             try? await Task.sleep(for: .milliseconds(200))
         }
-        return closeOutcome(stillRunningAfterWait: !app.isTerminated, error: nil)
+        let outcome = closeOutcome(stillRunningAfterWait: !app.isTerminated, error: nil)
+        guard outcome == .closed else { return outcome }
+        try? await Task.sleep(for: Self.reopenWait)
+        return pending.wasReopened(current: ProcessSampler.sample()) ? .reopened : .closed
     }
 
     private func closeWindow(_ project: VSCodeProject, pending: PendingClose, current: Dashboard) async -> CloseOutcome {

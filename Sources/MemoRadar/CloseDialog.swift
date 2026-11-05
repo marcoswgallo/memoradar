@@ -39,7 +39,7 @@ struct CloseDialog: View {
             }
         }
         .padding(14)
-        .frame(width: 360, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var accessibilityExplanation: some View {
