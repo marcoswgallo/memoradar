@@ -97,6 +97,22 @@ private func row(_ rows: [RankingRow], _ kind: RowKind) -> RankingRow? {
         #expect(!rows[0].closable)
     }
 
+    @Test("serviços do macOS têm linha própria", arguments: [
+        "/usr/libexec/trustd", "/System/Library/PrivateFrameworks/X.framework/Support/x",
+        "/usr/sbin/cfprefsd", "/sbin/launchd", "/usr/bin/caffeinate",
+    ])
+    func macOSServiceRow(exe: String) {
+        let rows = Ranking.build(processes: [proc(10, exe: exe)], sessions: [], mcps: [])
+        #expect(rows[0].kind == .macOSServices)
+        #expect(rows[0].title == "Serviços do macOS")
+        #expect(!rows[0].closable)
+    }
+
+    @Test func serviceInsideAppBundleStaysWithApp() {
+        let exe = "/System/Library/CoreServices/Dock.app/Contents/MacOS/Dock"
+        #expect(Ranking.build(processes: [proc(10, exe: exe)], sessions: [], mcps: [])[0].kind == .app("Dock"))
+    }
+
     @Test func rowsSortedByBytesDescending() {
         let processes = [
             proc(1, exe: "/Applications/A.app/Contents/MacOS/A", bytes: 5),
