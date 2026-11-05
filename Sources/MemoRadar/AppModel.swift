@@ -28,7 +28,6 @@ final class AppModel {
     private let notifier = Notifier()
     private let closer = Closer()
     private var ledger = NotificationLedger()
-    private var askedNotificationPermission = false
     private var loop: Task<Void, Never>?
 
     private static let closedInterval: Duration = .seconds(10)
@@ -41,7 +40,6 @@ final class AppModel {
 
     func start() {
         guard loop == nil else { return }
-        requestNotificationPermissionOnce()
         loop = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.refresh()
@@ -49,13 +47,6 @@ final class AppModel {
                 try? await Task.sleep(for: interval)
             }
         }
-    }
-
-    /// Fora do ciclo de leitura: o painel não pode ficar esperando a resposta do diálogo.
-    private func requestNotificationPermissionOnce() {
-        guard !askedNotificationPermission, settings.notificationsEnabled else { return }
-        askedNotificationPermission = true
-        Task { await notifier.requestPermission() }
     }
 
     func setPanelOpen(_ open: Bool) {

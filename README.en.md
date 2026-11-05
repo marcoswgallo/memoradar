@@ -48,7 +48,7 @@ Requires macOS 14 or later.
 ## Permissions
 
 - **Accessibility (optional):** only to read VS Code window titles and press the close button. Everything else works without it. You may need to grant it again after updating the app.
-- **Notifications (optional):** to warn you about forgotten projects.
+- **Notifications (optional):** the official macOS API refuses apps without a paid Apple certificate, so the alert is sent through AppleScript. It shows the name and icon of **Script Editor**, with a title starting with "MemoRadar:", and clicking it may open that program. If it does not appear, allow Script Editor notifications in System Settings > Notifications. The panel highlight and the icon color work without it.
 
 ## Privacy
 

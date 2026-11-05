@@ -106,7 +106,8 @@ Quando um projeto vira esquecido, acontecem três coisas: notificação do macOS
 
 - Uma notificação por pasta de projeto a cada vez que ela vira esquecida. Só avisa de novo se o projeto voltar a ter atividade e depois ficar parado outra vez.
 - Notificações podem ser desligadas nas configurações. O destaque e a cor continuam.
-- Se a permissão de notificação for negada, o app continua funcionando normalmente.
+- A API oficial (`UserNotifications`) recusa apps com assinatura ad-hoc (`UNErrorDomain Code=1`), então o aviso usa `osascript` e aparece como Editor de Script. O nome da pasta só entra como argumento, nunca no texto do script.
+- Se o aviso não aparecer, o app continua funcionando normalmente.
 
 ### 6.5 Fechar
 
@@ -203,7 +204,7 @@ Decisões do autor do documento, que o dono pode rever:
 - **Empacotamento:** um script gera o `.app` (`Info.plist` com `LSUIElement`) e assina ad-hoc.
 - **macOS mínimo:** 14.
 - **Distribuição:** `.zip` no GitHub Releases, gratuito. Sem conta paga da Apple, o app não é notarizado, e o macOS mostra um aviso na primeira abertura. O README explica como abrir.
-- **Permissões:** Acessibilidade só para fechar janelas do VS Code e, se concedida, para ler os títulos delas; Notificações. A assinatura ad-hoc pode exigir conceder a Acessibilidade de novo após atualizar o app, e o README deve avisar. Confirmar no protótipo.
+- **Permissões:** Acessibilidade só para fechar janelas do VS Code e, se concedida, para ler os títulos delas. A assinatura ad-hoc pode exigir conceder a Acessibilidade de novo após atualizar o app, e o README deve avisar. Confirmar no protótipo.
 - **Atualização dos dados:** a cada 10 segundos com o painel fechado e a cada 3 segundos com ele aberto (padrão do autor do documento, ajustar se a meta de consumo não for cumprida).
 - **Idioma:** interface e README em português do Brasil, com README também em inglês, por ser um projeto público. Interface em inglês fica para depois.
 - **Licença:** MIT.

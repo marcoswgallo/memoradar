@@ -1,23 +1,16 @@
 import Foundation
-import UserNotifications
+import MemoRadarCore
 
-/// Sem permissão de notificação, o app segue normalmente: o destaque e a cor continuam.
+/// Usa o AppleScript porque a API oficial recusa apps sem certificado pago da Apple.
+/// Se o aviso falhar, o destaque no painel e a cor do ícone continuam.
 @MainActor
 final class Notifier {
-    private var center: UNUserNotificationCenter? {
-        // Fora de um .app, esta API encerra o processo.
-        Bundle.main.bundleIdentifier == nil ? nil : .current()
-    }
-
-    func requestPermission() async {
-        _ = try? await center?.requestAuthorization(options: [.alert, .sound])
-    }
-
     func notifyForgotten(folderName: String, idleFor: String) {
-        guard let center else { return }
-        let content = UNMutableNotificationContent()
-        content.title = "\(folderName) parece esquecido"
-        content.body = "O Claude Code está parado há \(idleFor) neste projeto. Abra o MemoRadar para ver quanto dá para liberar."
-        center.add(UNNotificationRequest(identifier: "esquecido-\(folderName)-\(UUID().uuidString)", content: content, trigger: nil))
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: NotificationScript.executablePath)
+        process.arguments = NotificationScript.arguments(folderName: folderName, idleFor: idleFor)
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        try? process.run()
     }
 }
