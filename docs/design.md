@@ -46,7 +46,7 @@ Usuários do Claude Code em Mac, técnicos ou não. Os textos do app devem ser d
 - Descartar arquivo sem salvar ou contornar o aviso de salvar do próprio app.
 - Oferecer fechar processos do sistema, como WindowServer.
 - Enviar dados para fora do Mac. Sem conta, telemetria nem conexão de rede de qualquer tipo.
-- Ler conversas do Claude Code (`~/.claude/projects/*.jsonl`), arquivos `.key` de `~/.claude/sessions/` ou arquivos de configuração como `~/.claude.json`, que podem conter dados sensíveis.
+- Ler conversas do Claude Code (`~/.claude/projects/*.jsonl`), arquivos `.key` de `~/.claude/sessions/` ou o conteúdo de Skills. De `~/.claude.json` e `~/.claude/settings.json`, usar apenas `skillUsage` e `enabledPlugins`, descartando o resto.
 - Mostrar um estado que não conseguiu confirmar. Na dúvida, mostra "estado desconhecido".
 - Prometer "limpar a memória". Nada de purge nem truques; o app só ajuda a fechar o que a pessoa escolher.
 - Pesar na própria máquina que tenta aliviar. Meta: menos de 50 MB de footprint e CPU desprezível em repouso (meta do autor do documento).
@@ -139,7 +139,11 @@ Regras adicionais:
 - Se a janela não puder ser identificada com segurança, mostra o motivo e não fecha nada.
 - Se a ação falhar, ou o item continuar aberto depois de alguns segundos, o painel informa em vez de fingir que deu certo. Isso cobre o caso do VS Code aguardando resposta sobre arquivo sem salvar.
 
-### 6.6 Configurações
+### 6.6 Skills sem uso (a partir da 0.2.0)
+
+Seção no fim do painel, agrupada por plugin: quantas Skills estão sem uso registrado, a lista com a data do último uso e o comando `claude plugin disable`. Só mostra, nunca desativa. O registro `skillUsage` não é exato, então o texto é sempre "sem uso registrado"; se ele não puder ser lido, o texto é "uso indisponível". Skills de projeto e de outras origens ficam de fora.
+
+### 6.7 Configurações
 
 Limite de "esquecido" (padrão de 4 horas), notificações ligadas ou desligadas e abrir ao iniciar sessão no Mac (desligado por padrão).
 

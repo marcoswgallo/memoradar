@@ -22,6 +22,8 @@ final class AppModel {
     private(set) var dashboard: Dashboard?
     private(set) var iconState: IconState = .normal
     private(set) var panelIsOpen = false
+    private(set) var skillReport: SkillReport?
+    private var skillsLoadedAt: Date?
 
     let settings: AppSettings
     let panel = PanelState()
@@ -32,6 +34,7 @@ final class AppModel {
 
     private static let closedInterval: Duration = .seconds(10)
     private static let openInterval: Duration = .seconds(3)
+    private static let skillsRefreshInterval: TimeInterval = 60
     private static let sessionsDirectory = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(".claude/sessions")
 
     init(settings: AppSettings) {
@@ -57,10 +60,21 @@ final class AppModel {
             panel.closeResult = nil
         }
         if open {
+            loadSkillsIfNeeded()
             // Reinicia o ciclo para atualizar agora e passar ao intervalo curto.
             loop?.cancel()
             loop = nil
             start()
+        }
+    }
+
+    /// Abre arquivos de configuração, então só roda com o painel aberto e no máximo uma vez por minuto.
+    private func loadSkillsIfNeeded() {
+        if let skillsLoadedAt, Date().timeIntervalSince(skillsLoadedAt) < Self.skillsRefreshInterval { return }
+        skillsLoadedAt = Date()
+        let home = URL(fileURLWithPath: NSHomeDirectory())
+        Task {
+            skillReport = await Task.detached(priority: .utility) { SkillScanner.load(home: home) }.value
         }
     }
 

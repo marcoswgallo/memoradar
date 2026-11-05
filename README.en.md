@@ -17,6 +17,7 @@ The app's interface is currently in Brazilian Portuguese.
 - **VS Code projects:** memory, number of Claude sessions, time open and time idle.
 - **Claude Code in the terminal:** sessions by folder.
 - **Open MCP servers:** how many copies of each server, how much they use and which session they belong to.
+- **Unused Skills:** by plugin, how many Skills have no recorded use and the command to disable them. Skills do not use RAM, but they take up context in every session. The app only shows this: you are the one who disables them.
 
 ## What counts as forgotten
 
@@ -54,13 +55,18 @@ Requires macOS 14 or later.
 
 MemoRadar **makes no network connections**. There is no account, telemetry or automatic update.
 
-**What it reads:** information about your processes, through macOS APIs, and the `~/.claude/sessions/<pid>.json` files, which hold each session's state.
+**What it reads:**
 
-**What it never reads:** your conversations (`~/.claude/projects`), session `.key` files and configuration files such as `~/.claude.json`.
+- Information about your processes, through macOS APIs.
+- The `~/.claude/sessions/<pid>.json` files, which hold each session's state.
+- For the Skills section, when the panel opens: the `skillUsage` field of `~/.claude.json`, the `enabledPlugins` field of `~/.claude/settings.json`, the plugin list in `~/.claude/plugins/installed_plugins.json` and the names of Skill folders. The app has to open these whole files to find the fields, and the rest is discarded without being stored or shown.
+
+**What it never reads:** your conversations (`~/.claude/projects`), session `.key` files and the content of Skills. The app also never changes any of these files.
 
 ## Limitations
 
 - Session state comes from internal Claude Code files, which may change in an update. If they do, the app shows "estado desconhecido" (unknown state) instead of guessing, and uses the strong warning.
+- The Skill usage record belongs to Claude Code and is not an exact count, so the app says "sem uso registrado" (no recorded use). The count leaves out project Skills and other sources.
 - macOS does not report the usage of other users' processes without administrator privileges, such as WindowServer, and the app does not ask for them. So it shows the memory reserved by the system as a single number.
 - The memory of the window itself cannot always be tied to a project, and goes to "VS Code (geral)" (general). The estimate shown when closing a window may be lower than the real amount.
 - Windows without a Claude session appear unnamed and cannot be closed from the app, because they cannot be identified safely.

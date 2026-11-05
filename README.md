@@ -15,6 +15,7 @@ O Monitor de Atividade lista dezenas de processos `Code Helper` sem dizer de qua
 - **Projetos no VS Code:** memória, número de sessões do Claude, tempo aberto e tempo parado.
 - **Claude Code no terminal:** sessões por pasta.
 - **MCPs abertos:** quantas cópias de cada servidor, quanto gastam e a qual sessão pertencem.
+- **Skills sem uso:** por plugin, quantas Skills não têm uso registrado e o comando para desativar. Skills não gastam RAM, mas ocupam contexto em cada sessão. O app só mostra: quem desativa é você.
 
 ## O que conta como esquecido
 
@@ -52,13 +53,18 @@ Requer macOS 14 ou mais recente.
 
 O MemoRadar **não faz nenhuma conexão de rede**. Não tem conta, telemetria nem atualização automática.
 
-**O que ele lê:** informações dos seus processos, via APIs do macOS, e os arquivos `~/.claude/sessions/<pid>.json`, que trazem o estado de cada sessão.
+**O que ele lê:**
 
-**O que ele nunca lê:** suas conversas (`~/.claude/projects`), os arquivos `.key` de sessão e arquivos de configuração como `~/.claude.json`.
+- Informações dos seus processos, via APIs do macOS.
+- Os arquivos `~/.claude/sessions/<pid>.json`, que trazem o estado de cada sessão.
+- Para a seção de Skills, ao abrir o painel: o campo `skillUsage` de `~/.claude.json`, o campo `enabledPlugins` de `~/.claude/settings.json`, a lista de plugins em `~/.claude/plugins/installed_plugins.json` e os nomes das pastas de Skills. O app precisa abrir esses arquivos inteiros para achar os campos, e o restante é descartado sem ser guardado nem mostrado.
+
+**O que ele nunca lê:** suas conversas (`~/.claude/projects`), os arquivos `.key` de sessão e o conteúdo das Skills. O app também nunca altera nenhum desses arquivos.
 
 ## Limitações
 
 - O estado das sessões vem de arquivos internos do Claude Code, que podem mudar em alguma atualização. Se isso acontecer, o app mostra "estado desconhecido" em vez de adivinhar, e usa o alerta forte.
+- O registro de uso de Skills é do próprio Claude Code e não é uma contagem exata. Por isso o app diz "sem uso registrado". A conta não inclui Skills de projeto nem de outras origens.
 - O macOS não informa o consumo de processos de outros usuários sem privilégio de administrador, como o WindowServer, e o app não pede esse privilégio. Por isso, ele mostra a memória reservada pelo sistema como um único número.
 - A memória da janela em si nem sempre pode ser ligada a um projeto, e fica em "VS Code (geral)". A estimativa ao fechar uma janela pode ser menor que o real.
 - Janelas sem sessão do Claude aparecem sem nome e não podem ser fechadas pelo app, porque não há como identificá-las com segurança.

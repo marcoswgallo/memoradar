@@ -25,7 +25,7 @@ struct PanelView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     if let dashboard = model.dashboard {
                         ScrollView {
-                            PanelContent(dashboard: dashboard, panel: model.panel, onClose: { model.requestClose($0) })
+                            PanelContent(dashboard: dashboard, skills: model.skillReport, panel: model.panel, onClose: { model.requestClose($0) })
                                 .padding(14)
                         }
                     } else {
@@ -53,6 +53,7 @@ struct PanelView: View {
 
 struct PanelContent: View {
     let dashboard: Dashboard
+    let skills: SkillReport?
     let panel: PanelState
     let onClose: (CloseTarget) -> Void
 
@@ -81,6 +82,10 @@ struct PanelContent: View {
                 Text("Swap").foregroundStyle(.secondary)
                 Spacer()
                 Text(MemoryFormat.bytes(dashboard.system.swapUsedBytes)).monospacedDigit().foregroundStyle(.secondary)
+            }
+            if let skills, skills.totalCount > 0 {
+                Divider().padding(.vertical, 4)
+                SkillsSectionView(report: skills, panel: panel)
             }
         }
     }

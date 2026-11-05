@@ -8,14 +8,17 @@ struct ExpandableRow<Trailing: View, Details: View>: View {
     @ViewBuilder let trailing: Trailing
     @ViewBuilder let details: Details
     var expandable = true
+    /// Identifica a linha quando o título pode se repetir em outra seção.
+    var key: String?
 
-    private var expanded: Bool { panel.expanded.contains(title) }
+    private var stateKey: String { key ?? title }
+    private var expanded: Bool { panel.expanded.contains(stateKey) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
                 if expandable {
-                    Button { panel.toggle(title) } label: { titleLabel }
+                    Button { panel.toggle(stateKey) } label: { titleLabel }
                         .buttonStyle(.plain)
                 } else {
                     titleLabel
