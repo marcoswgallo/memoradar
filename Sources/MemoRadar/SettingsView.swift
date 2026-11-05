@@ -17,6 +17,10 @@ struct SettingsView: View {
                 Text("Considerar esquecido após \(settings.forgottenThresholdHours) h parado")
             }
             Toggle("Avisar com notificação", isOn: $settings.notificationsEnabled)
+            Toggle("Abrir ao iniciar sessão no Mac", isOn: $settings.launchAtLogin)
+            if let error = settings.launchAtLoginError {
+                Text(error).font(.caption).foregroundStyle(.secondary)
+            }
         }
         .padding(14)
         .frame(width: 360)

@@ -22,6 +22,8 @@ final class AppModel {
 
     let settings: AppSettings
     let panel = PanelState()
+    private let notifier = Notifier()
+    private var ledger = NotificationLedger()
     private var loop: Task<Void, Never>?
 
     private static let closedInterval: Duration = .seconds(10)
@@ -35,6 +37,7 @@ final class AppModel {
     func start() {
         guard loop == nil else { return }
         loop = Task { [weak self] in
+            if self?.settings.notificationsEnabled == true { await self?.notifier.requestPermission() }
             while !Task.isCancelled {
                 await self?.refresh()
                 let interval = self?.panelIsOpen == true ? Self.openInterval : Self.closedInterval
@@ -53,6 +56,19 @@ final class AppModel {
         }
     }
 
+    /// O registro é atualizado mesmo com avisos desligados, para não disparar tudo de uma vez ao religar.
+    private func notifyNewlyForgotten(in dashboard: Dashboard) {
+        let new = ledger.update(forgotten: dashboard.forgotten)
+        guard settings.notificationsEnabled else { return }
+        for folder in new.sorted() {
+            let sessions = dashboard.sessions.filter { $0.cwd == folder }
+            let idle = Dashboard.idleDuration(sessions: sessions, now: dashboard.now) ?? 0
+            notifier.notifyForgotten(
+                folderName: URL(fileURLWithPath: folder).lastPathComponent,
+                idleFor: MemoryFormat.duration(idle))
+        }
+    }
+
     func refresh() async {
         let threshold = settings.threshold
         let directory = Self.sessionsDirectory
@@ -68,5 +84,6 @@ final class AppModel {
         }.value
         dashboard = result
         iconState = IconState.compute(pressure: result.system.pressure, hasForgotten: !result.forgotten.isEmpty)
+        notifyNewlyForgotten(in: result)
     }
 }
