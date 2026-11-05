@@ -114,6 +114,72 @@ private func copy(session: Int32, name: String = "srv") -> McpCopy {
         #expect(c.message.contains("cerca de 2,0 GB"))
     }
 
+    private func hosted(_ pids: [(Int32, Int32, String)]) -> ProcessTree {
+        ProcessTree(pids.map { ProcessSnapshot(pid: $0.0, ppid: $0.1, startTime: start, footprintBytes: 1, executablePath: $0.2) })
+    }
+
+    @Test func appHostingBusySessionIsStrong() {
+        let tree = hosted([(50, 1, "/Applications/Foo.app/Contents/MacOS/Foo"), (51, 50, "/bin/zsh"), (52, 51, "/x/claude")])
+        let s = session(52, .busy, cwd: "/x/projeto-c", entry: "cli")
+        let c = ClosePolicy.confirmation(for: .app(name: "Foo", pids: [50], bytes: gb), allSessions: [s], tree: tree)
+        #expect(c.severity == .strong)
+        #expect(c.title == "O Claude Code está rodando em projeto-c. Fechar mesmo assim?")
+    }
+
+    @Test func appHostingUnknownSessionIsStrong() {
+        let tree = hosted([(50, 1, "/x/Foo"), (52, 50, "/x/claude")])
+        let s = session(52, .unknown, cwd: "/x/projeto-c", entry: "cli")
+        #expect(ClosePolicy.confirmation(for: .app(name: "Foo", pids: [50], bytes: gb), allSessions: [s], tree: tree).severity == .strong)
+    }
+
+    @Test func appHostingIdleSessionIsSimple() {
+        let tree = hosted([(50, 1, "/x/Foo"), (52, 50, "/x/claude")])
+        let s = session(52, .idle, cwd: "/x/projeto-c", entry: "cli")
+        #expect(ClosePolicy.confirmation(for: .app(name: "Foo", pids: [50], bytes: gb), allSessions: [s], tree: tree).severity == .simple)
+    }
+
+    @Test func appWithUnrelatedBusySessionIsSimple() {
+        let tree = hosted([(50, 1, "/x/Foo"), (60, 1, "/x/Terminal"), (61, 60, "/x/claude")])
+        let s = session(61, .busy, cwd: "/x/projeto-c", entry: "cli")
+        #expect(ClosePolicy.confirmation(for: .app(name: "Foo", pids: [50], bytes: gb), allSessions: [s], tree: tree).severity == .simple)
+    }
+
+    @Test func windowUsesFreshStatusNotStatusFromClick() {
+        let frozen = session(1, .idle)
+        let fresh = session(1, .busy)
+        let c = ClosePolicy.confirmation(for: .vscodeWindow(project(sessions: [frozen])), allSessions: [fresh])
+        #expect(c.severity == .strong)
+    }
+
+    @Test func terminalSessionUsesFreshStatusNotStatusFromClick() {
+        let frozen = session(2, .idle, entry: "cli")
+        let fresh = session(2, .busy, entry: "cli")
+        #expect(ClosePolicy.confirmation(for: .terminalSession(frozen, bytes: gb), allSessions: [fresh]).severity == .strong)
+    }
+
+    @Test func busyCliSessionInSubfolderIsStrong() {
+        let terminal = session(2, .busy, cwd: "/x/projeto-a/packages/api", entry: "cli")
+        let c = ClosePolicy.confirmation(for: .vscodeWindow(project()), allSessions: [terminal])
+        #expect(c.severity == .strong)
+        #expect(c.title.contains("projeto-a"))
+    }
+
+    @Test func folderWithSamePrefixIsNotSubfolder() {
+        let terminal = session(2, .busy, cwd: "/x/projeto-a2", entry: "cli")
+        #expect(ClosePolicy.confirmation(for: .vscodeWindow(project()), allSessions: [terminal]).severity == .simple)
+    }
+
+    @Test func busyCliSessionInIntegratedTerminalElsewhereIsStrong() {
+        let tree = hosted([
+            (5, 1, "/Applications/Visual Studio Code.app/Contents/MacOS/Code"),
+            (6, 5, "/bin/zsh"), (7, 6, "/x/claude"),
+        ])
+        let terminal = session(7, .busy, cwd: "/y/outra-pasta", entry: "cli")
+        let c = ClosePolicy.confirmation(for: .vscodeWindow(project()), allSessions: [terminal], tree: tree)
+        #expect(c.severity == .strong)
+        #expect(c.title.contains("outra-pasta"))
+    }
+
     @Test func sameProcessRequiresPidAndStart() {
         let current = ProcessSnapshot(pid: 5, ppid: 1, startTime: start, footprintBytes: 1, executablePath: "/x")
         #expect(ClosePolicy.isSameProcess(ProcessIdentity(pid: 5, startTime: start), current: current))

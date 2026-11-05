@@ -13,11 +13,14 @@ struct ExpandableRow<Trailing: View, Details: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            if expandable {
-                Button { panel.toggle(title) } label: { header }
-                    .buttonStyle(.plain)
-            } else {
-                header
+            HStack(spacing: 6) {
+                if expandable {
+                    Button { panel.toggle(title) } label: { titleLabel }
+                        .buttonStyle(.plain)
+                } else {
+                    titleLabel
+                }
+                trailing.monospacedDigit().foregroundStyle(.secondary)
             }
             if expanded {
                 VStack(alignment: .leading, spacing: 6) { details }
@@ -27,7 +30,7 @@ struct ExpandableRow<Trailing: View, Details: View>: View {
         .padding(.vertical, 3)
     }
 
-    private var header: some View {
+    private var titleLabel: some View {
         HStack(spacing: 6) {
             Image(systemName: expanded ? "chevron.down" : "chevron.right")
                 .font(.system(size: 9, weight: .semibold))
@@ -35,9 +38,28 @@ struct ExpandableRow<Trailing: View, Details: View>: View {
                 .opacity(expandable ? 0.6 : 0)
             Text(title).fontWeight(.medium).lineLimit(1)
             Spacer(minLength: 8)
-            trailing.monospacedDigit().foregroundStyle(.secondary)
         }
         .contentShape(Rectangle())
+    }
+}
+
+/// Processos de um app, do maior para o menor.
+struct ProcessListView: View {
+    let processes: [ProcessDetail]
+    let total: Int
+
+    var body: some View {
+        ForEach(processes) { process in
+            HStack {
+                Text(process.name).font(.caption).lineLimit(1).truncationMode(.middle)
+                Spacer(minLength: 8)
+                Text(MemoryFormat.bytes(process.bytes)).font(.caption).monospacedDigit()
+            }
+            .foregroundStyle(.secondary)
+        }
+        if total > processes.count {
+            Text("e mais \(total - processes.count)").font(.caption).foregroundStyle(.tertiary)
+        }
     }
 }
 

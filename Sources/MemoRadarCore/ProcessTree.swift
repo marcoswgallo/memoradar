@@ -25,6 +25,17 @@ public struct ProcessTree: Sendable {
         return result
     }
 
+    public func ancestors(of pid: Int32) -> [ProcessSnapshot] {
+        var visited: Set<Int32> = [pid]
+        var result: [ProcessSnapshot] = []
+        var current = byPid[pid]?.ppid
+        while let parent = current, visited.insert(parent).inserted, let process = byPid[parent] {
+            result.append(process)
+            current = process.ppid
+        }
+        return result
+    }
+
     public func isDescendant(_ pid: Int32, of ancestor: Int32) -> Bool {
         var visited: Set<Int32> = [pid]
         var current = byPid[pid]?.ppid

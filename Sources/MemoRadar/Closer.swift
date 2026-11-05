@@ -5,25 +5,21 @@ import MemoRadarCore
 final class Closer {
     private static let waitSeconds: TimeInterval = 5
 
-    func perform(_ target: CloseTarget, dashboard: Dashboard) async -> CloseOutcome {
-        switch target {
-        case let .app(_, pids, _):
-            return await closeApp(pids: pids, dashboard: dashboard)
+    func perform(_ pending: PendingClose, current: Dashboard) async -> CloseOutcome {
+        switch pending.target {
+        case .app:
+            return await closeApp(pending)
         case let .vscodeWindow(project):
-            return await closeWindow(project, dashboard: dashboard)
-        case let .terminalSession(session, _):
-            return await ProcessTerminator.terminate(identities([session.pid], dashboard))
-        case let .mcpCopy(copy):
-            return await ProcessTerminator.terminate(identities(copy.pids, dashboard))
-        case let .mcpServer(_, copies):
-            return await ProcessTerminator.terminate(identities(copies.flatMap(\.pids), dashboard))
+            return await closeWindow(project, pending: pending, current: current)
+        case .terminalSession, .mcpCopy, .mcpServer:
+            return await ProcessTerminator.terminate(pending.identities)
         }
     }
 
-    private func closeApp(pids: [Int32], dashboard: Dashboard) async -> CloseOutcome {
-        let targets = identities(pids, dashboard)
-        let live = ProcessTerminator.signalablePids(targets, current: ProcessSampler.sample())
-        guard let app = live.lazy.compactMap({ NSRunningApplication(processIdentifier: $0) }).first(where: { $0.bundleIdentifier != nil }) else {
+    private func closeApp(_ pending: PendingClose) async -> CloseOutcome {
+        let live = Set(ProcessTerminator.signalablePids(pending.identities, current: ProcessSampler.sample()))
+        let candidates = pending.mainAppCandidates.filter(live.contains)
+        guard let app = candidates.lazy.compactMap({ NSRunningApplication(processIdentifier: $0) }).first(where: { $0.bundleIdentifier != nil }) else {
             return .failed("Não encontrei este app em execução. Nada foi fechado.")
         }
         guard app.terminate() else {
@@ -36,16 +32,18 @@ final class Closer {
         return closeOutcome(stillRunningAfterWait: !app.isTerminated, error: nil)
     }
 
-    private func closeWindow(_ project: VSCodeProject, dashboard: Dashboard) async -> CloseOutcome {
+    private func closeWindow(_ project: VSCodeProject, pending: PendingClose, current: Dashboard) async -> CloseOutcome {
         guard AccessibilityWindows.isTrusted else {
             return .failed("Fechar janelas precisa da permissão de Acessibilidade.")
         }
         guard let folder = project.folder else {
             return .failed("Sem uma sessão do Claude, não dá para saber com segurança qual é esta janela. Nada foi fechado.")
         }
-        let siblings = dashboard.vscode.projects.compactMap(\.folder)
+        let siblings = current.vscode.projects.compactMap(\.folder)
         let titles = AccessibilityWindows.vscodeWindowTitles()
-        switch WindowMatcher.match(folder: folder, siblingFolders: siblings, titles: titles) {
+        switch WindowMatcher.match(
+            folder: folder, siblingFolders: siblings, titles: titles, hostCount: current.vscode.projects.count
+        ) {
         case .none:
             return .failed("Não encontrei a janela de \(project.displayName). Nada foi fechado.")
         case .ambiguous:
@@ -55,13 +53,7 @@ final class Closer {
                 return .failed("O VS Code não aceitou o pedido de fechar a janela.")
             }
         }
-        let stillRunning = await ProcessTerminator.waitUntilGone(identities([project.hostPid], dashboard), timeout: Self.waitSeconds)
+        let stillRunning = await ProcessTerminator.waitUntilGone(pending.identities, timeout: Self.waitSeconds)
         return closeOutcome(stillRunningAfterWait: stillRunning, error: nil)
-    }
-
-    private func identities(_ pids: [Int32], _ dashboard: Dashboard) -> [ProcessIdentity] {
-        let wanted = Set(pids)
-        return dashboard.processes.filter { wanted.contains($0.pid) }
-            .map { ProcessIdentity(pid: $0.pid, startTime: $0.startTime) }
     }
 }

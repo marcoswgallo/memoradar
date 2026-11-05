@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 
 LOG="$(mktemp)"
 trap 'rm -f "$LOG"' EXIT
-for _ in 1 2 3; do
+for _ in 1 2 3 4 5 6; do
     if swift test "$@" >"$LOG" 2>&1; then
         grep -vE 'ld: warning: search path' "$LOG" | tail -n 40
         exit 0

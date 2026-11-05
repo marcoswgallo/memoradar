@@ -8,9 +8,10 @@ import Observation
 final class PanelState {
     var showingSettings = false
     var expanded: Set<String> = []
-    var pendingClose: CloseTarget?
+    var pendingClose: PendingClose?
     var isClosing = false
     var closeResult: String?
+    var contentHeight: CGFloat = 320
 
     func toggle(_ key: String) {
         if expanded.contains(key) { expanded.remove(key) } else { expanded.insert(key) }
@@ -65,15 +66,16 @@ final class AppModel {
     }
 
     func requestClose(_ target: CloseTarget) {
+        guard let dashboard else { return }
         panel.closeResult = nil
-        panel.pendingClose = target
+        panel.pendingClose = PendingClose(target: target, dashboard: dashboard)
     }
 
     func confirmClose() {
-        guard let target = panel.pendingClose, let dashboard, !panel.isClosing else { return }
+        guard let pending = panel.pendingClose, let dashboard, !panel.isClosing else { return }
         panel.isClosing = true
         Task {
-            let outcome = await closer.perform(target, dashboard: dashboard)
+            let outcome = await closer.perform(pending, current: dashboard)
             panel.isClosing = false
             panel.pendingClose = nil
             panel.closeResult = Self.message(for: outcome)

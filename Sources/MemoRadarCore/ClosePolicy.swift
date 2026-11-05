@@ -41,17 +41,28 @@ public enum ClosePolicy {
     private static let mcpWarning =
         "Cada sessão fica sem essas ferramentas até reiniciar. Ele volta em sessões novas, se continuar configurado."
 
-    public static func confirmation(for target: CloseTarget, allSessions: [ClaudeSession]) -> Confirmation {
+    /// `allSessions` traz o estado mais recente. O que veio no alvo é do momento do clique.
+    public static func confirmation(
+        for target: CloseTarget, allSessions: [ClaudeSession], tree: ProcessTree = ProcessTree([])
+    ) -> Confirmation {
         switch target {
-        case let .app(name, _, bytes):
-            return confirmation(fallbackTitle: "Fechar \(name)?", atRisk: [], extra: "O app pode pedir para salvar.", bytes: bytes)
+        case let .app(name, pids, bytes):
+            let hosted = allSessions.filter { session in
+                isAtRisk(session) && pids.contains { $0 == session.pid || tree.isDescendant(session.pid, of: $0) }
+            }
+            return confirmation(
+                fallbackTitle: "Fechar \(name)?", atRisk: unique(hosted.map(folderName)),
+                extra: "O app pode pedir para salvar.", bytes: bytes)
 
         case let .vscodeWindow(project):
-            let sameFolderTerminal = allSessions.filter {
-                $0.entrypoint == "cli" && project.folder != nil && $0.cwd == project.folder
+            let own = project.sessions.map { fresh($0, in: allSessions) }.filter(isAtRisk)
+            let related = allSessions.filter { session in
+                session.entrypoint == "cli" && isAtRisk(session)
+                    && (isInside(session.cwd, folder: project.folder) || isInVSCode(session, tree: tree))
             }
-            let atRisk = (project.sessions + sameFolderTerminal).filter(isAtRisk)
-            let names = atRisk.isEmpty ? [] : [project.displayName]
+            let names = unique(
+                (own.isEmpty ? [] : [project.displayName])
+                    + related.map { isInside($0.cwd, folder: project.folder) ? project.displayName : folderName($0) })
             return confirmation(
                 fallbackTitle: "Fechar \(project.displayName)?", atRisk: names,
                 extra: "Se houver arquivo sem salvar, o VS Code vai perguntar.",
@@ -60,7 +71,8 @@ public enum ClosePolicy {
         case let .terminalSession(session, bytes):
             let name = folderName(session)
             return confirmation(
-                fallbackTitle: "Encerrar a sessão em \(name)?", atRisk: isAtRisk(session) ? [name] : [],
+                fallbackTitle: "Encerrar a sessão em \(name)?",
+                atRisk: isAtRisk(fresh(session, in: allSessions)) ? [name] : [],
                 extra: nil, bytes: bytes)
 
         case let .mcpCopy(copy):
@@ -85,10 +97,8 @@ public enum ClosePolicy {
             }
             if isAtRisk(session) { atRisk.append(folderName(session)) }
         }
-        var unique: [String] = []
-        for item in atRisk where !unique.contains(item) { unique.append(item) }
         return confirmation(
-            fallbackTitle: "Fechar \(name)?", atRisk: unique, extra: mcpWarning,
+            fallbackTitle: "Fechar \(name)?", atRisk: unique(atRisk), extra: mcpWarning,
             bytes: copies.reduce(0) { $0 + $1.bytes })
     }
 
@@ -107,6 +117,26 @@ public enum ClosePolicy {
     }
 
     private static func isAtRisk(_ session: ClaudeSession) -> Bool { session.status != .idle }
+
+    private static func fresh(_ session: ClaudeSession, in allSessions: [ClaudeSession]) -> ClaudeSession {
+        allSessions.first { $0.pid == session.pid } ?? session
+    }
+
+    private static func isInside(_ cwd: String?, folder: String?) -> Bool {
+        guard let cwd, let folder else { return false }
+        return cwd == folder || cwd.hasPrefix(folder + "/")
+    }
+
+    /// Fechar a janela pode encerrar o terminal integrado em que a sessão está.
+    private static func isInVSCode(_ session: ClaudeSession, tree: ProcessTree) -> Bool {
+        tree.ancestors(of: session.pid).contains { Ranking.isVSCodePath($0.executablePath) }
+    }
+
+    private static func unique(_ names: [String]) -> [String] {
+        var result: [String] = []
+        for name in names where !result.contains(name) { result.append(name) }
+        return result
+    }
 
     private static func folderName(_ session: ClaudeSession) -> String {
         guard let cwd = session.cwd, cwd != "/" else { return "uma sessão" }

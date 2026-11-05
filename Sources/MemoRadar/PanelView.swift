@@ -5,12 +5,15 @@ import SwiftUI
 struct PanelView: View {
     let model: AppModel
 
+    private static let maximumHeight: CGFloat = 560
+
     var body: some View {
         Group {
-            if let target = model.panel.pendingClose, let dashboard = model.dashboard {
+            if let pending = model.panel.pendingClose, let dashboard = model.dashboard {
                 CloseDialog(
-                    target: target,
-                    confirmation: ClosePolicy.confirmation(for: target, allSessions: dashboard.sessions),
+                    target: pending.target,
+                    confirmation: ClosePolicy.confirmation(
+                        for: pending.target, allSessions: dashboard.sessions, tree: ProcessTree(dashboard.processes)),
                     isClosing: model.panel.isClosing,
                     onCancel: { model.panel.pendingClose = nil },
                     onConfirm: { model.confirmClose() }
@@ -20,10 +23,15 @@ struct PanelView: View {
             } else {
                 VStack(alignment: .leading, spacing: 0) {
                     if let dashboard = model.dashboard {
+                        // Uma ScrollView sozinha encolhe dentro do MenuBarExtra: a altura vem do conteúdo.
                         ScrollView {
-                            PanelContent(dashboard: dashboard, panel: model.panel, onClose: { model.requestClose($0) }).padding(14)
+                            PanelContent(dashboard: dashboard, panel: model.panel, onClose: { model.requestClose($0) })
+                                .padding(14)
+                                .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { height in
+                                    model.panel.contentHeight = height
+                                }
                         }
-                        .frame(maxHeight: 560)
+                        .frame(height: min(model.panel.contentHeight, Self.maximumHeight))
                     } else {
                         Text("Lendo a memória…").foregroundStyle(.secondary).padding(14)
                     }
@@ -49,6 +57,8 @@ struct PanelContent: View {
     let dashboard: Dashboard
     let panel: PanelState
     let onClose: (CloseTarget) -> Void
+
+    private static let maximumProcessDetails = 8
 
     /// Linhas menores que isso só poluem a lista.
     private static let minimumRowBytes: UInt64 = 50 * 1_048_576
@@ -160,7 +170,11 @@ struct PanelContent: View {
                         CloseRowButton { onClose(.app(name: row.title, pids: row.pids, bytes: row.bytes)) }
                     }
                 }
-            }, details: { EmptyView() }, expandable: false)
+            }, details: {
+                ProcessListView(
+                    processes: dashboard.topProcesses(pids: row.pids, limit: Self.maximumProcessDetails),
+                    total: row.pids.count)
+            })
         }
     }
 

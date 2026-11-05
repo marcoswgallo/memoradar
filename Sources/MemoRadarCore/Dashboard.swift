@@ -13,6 +13,13 @@ public struct McpServerGroup: Sendable, Equatable, Identifiable {
     public var bytes: UInt64
 }
 
+public struct ProcessDetail: Sendable, Equatable, Identifiable {
+    public var id: Int32 { pid }
+    public var pid: Int32
+    public var name: String
+    public var bytes: UInt64
+}
+
 /// Tudo o que o painel mostra em uma atualização.
 public struct Dashboard: Sendable, Equatable {
     public var system: SystemMemory
@@ -43,6 +50,20 @@ public struct Dashboard: Sendable, Equatable {
             processes: processes,
             now: now
         )
+    }
+
+    /// Os maiores processos de uma linha do ranking, para o detalhe ao expandir.
+    public func topProcesses(pids: [Int32], limit: Int) -> [ProcessDetail] {
+        let wanted = Set(pids)
+        return processes.filter { wanted.contains($0.pid) }
+            .sorted { $0.footprintBytes > $1.footprintBytes }
+            .prefix(limit)
+            .map { process in
+                ProcessDetail(
+                    pid: process.pid,
+                    name: URL(fileURLWithPath: process.executablePath).lastPathComponent,
+                    bytes: process.footprintBytes)
+            }
     }
 
     /// Há quanto tempo todas as sessões estão paradas. `nil` se alguma não estiver parada.
