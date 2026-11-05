@@ -87,6 +87,7 @@ Memória 75%                 [Pressão normal]
 - **Grupo "MCPs abertos":** por servidor, número de cópias e memória. Expandindo, mostra a qual sessão cada cópia pertence.
 - **Sessões do Claude no terminal:** aparecem como grupo "Claude Code no terminal", por pasta do projeto.
 - **Sistema:** uma linha com a memória reservada pelo sistema (Wired), sem botão de fechar. O macOS não informa a memória de processos de outros usuários sem privilégio de administrador (negado para 235 processos, incluindo WindowServer), e o app não pede esse privilégio nem estima o valor.
+- **Serviços do macOS:** processos do próprio usuário em `/System`, `/usr`, `/sbin` e `/bin`, em uma linha, sem botão de fechar.
 - **Outros:** processos do usuário sem app e fora de sessões do Claude, como servidores de desenvolvimento, Docker ou Ollama. Aparecem com a memória, mas sem botão de fechar na primeira versão.
 - **Rodapé:** Configurações e Sair.
 
