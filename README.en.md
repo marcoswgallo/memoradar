@@ -39,8 +39,8 @@ System processes, development servers, Docker and the like are listed but have n
 
 ## Installation
 
-1. Download `MemoRadar.zip` from the [Releases](https://github.com/marcoswgallo/memoradar/releases) page.
-2. Unzip it and move `MemoRadar.app` to your **Applications** folder.
+1. Download the latest `.dmg` from the [Releases](https://github.com/marcoswgallo/memoradar/releases) page.
+2. Open it and drag **MemoRadar** to your **Applications** folder.
 3. The first time, macOS warns that it cannot verify the developer, because this free app does not go through Apple's paid notarization. Go to **System Settings > Privacy & Security**, scroll to the message about MemoRadar and click **Open Anyway**.
 
 Requires macOS 14 or later.
@@ -73,6 +73,7 @@ Only the Command Line Tools are needed, not Xcode:
 ```bash
 scripts/test.sh          # runs the tests
 scripts/package-app.sh   # builds dist/MemoRadar.app
+scripts/package-dmg.sh   # builds the .dmg in dist/
 ```
 
 Without Xcode, the `@State` macro plugin is not available, so interface state lives in `@Observable` objects. `scripts/test.sh` also works around an intermittent failure of the testing plugin in the Command Line Tools.

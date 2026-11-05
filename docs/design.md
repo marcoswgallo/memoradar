@@ -203,7 +203,7 @@ Decisões do autor do documento, que o dono pode rever:
 - **Sem Xcode:** o Mac tem só as Command Line Tools (Swift 6.4.2). Verificado: `SwiftUI`, `MenuBarExtra`, `@Observable`, `UserNotifications` e `ServiceManagement` passam na checagem de tipos sem o Xcode. Compilar e abrir o `.app` de verdade é parte do protótipo inicial.
 - **Empacotamento:** um script gera o `.app` (`Info.plist` com `LSUIElement`) e assina ad-hoc.
 - **macOS mínimo:** 14.
-- **Distribuição:** `.zip` no GitHub Releases, gratuito. Sem conta paga da Apple, o app não é notarizado, e o macOS mostra um aviso na primeira abertura. O README explica como abrir.
+- **Distribuição:** `.dmg` no GitHub Releases, gratuito. Sem conta paga da Apple, o app não é notarizado, e o macOS mostra um aviso na primeira abertura. O README explica como abrir.
 - **Permissões:** Acessibilidade só para fechar janelas do VS Code e, se concedida, para ler os títulos delas. A assinatura ad-hoc pode exigir conceder a Acessibilidade de novo após atualizar o app, e o README deve avisar. Confirmar no protótipo.
 - **Atualização dos dados:** a cada 10 segundos com o painel fechado e a cada 3 segundos com ele aberto (padrão do autor do documento, ajustar se a meta de consumo não for cumprida).
 - **Idioma:** interface e README em português do Brasil, com README também em inglês, por ser um projeto público. Interface em inglês fica para depois.
