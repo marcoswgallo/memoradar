@@ -5,6 +5,7 @@ struct VSCodeSectionView: View {
     let breakdown: VSCodeBreakdown
     let forgotten: Set<String>
     let now: Date
+    let onClose: (CloseTarget) -> Void
 
     var body: some View {
         ForEach(breakdown.projects) { project in
@@ -26,6 +27,7 @@ struct VSCodeSectionView: View {
                 if let folder = project.folder, forgotten.contains(folder) { ForgottenBadge() }
                 Spacer(minLength: 8)
                 Text(MemoryFormat.bytes(project.ownBytes)).monospacedDigit()
+                CloseRowButton { onClose(.vscodeWindow(project)) }
             }
             Text(details(project)).font(.caption).foregroundStyle(.secondary)
         }
@@ -46,6 +48,7 @@ struct TerminalSectionView: View {
     let sessions: [TerminalSessionInfo]
     let forgotten: Set<String>
     let now: Date
+    let onClose: (CloseTarget) -> Void
 
     var body: some View {
         ForEach(sessions) { info in
@@ -55,6 +58,7 @@ struct TerminalSectionView: View {
                     if let cwd = info.session.cwd, forgotten.contains(cwd) { ForgottenBadge() }
                     Spacer(minLength: 8)
                     Text(MemoryFormat.bytes(info.bytes)).monospacedDigit()
+                    CloseRowButton { onClose(.terminalSession(info.session, bytes: info.bytes)) }
                 }
                 if let status = sessionStatusText([info.session], now: now) {
                     Text(status).font(.caption).foregroundStyle(.secondary)

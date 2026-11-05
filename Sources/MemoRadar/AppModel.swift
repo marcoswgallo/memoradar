@@ -8,6 +8,9 @@ import Observation
 final class PanelState {
     var showingSettings = false
     var expanded: Set<String> = []
+    var pendingClose: CloseTarget?
+    var isClosing = false
+    var closeResult: String?
 
     func toggle(_ key: String) {
         if expanded.contains(key) { expanded.remove(key) } else { expanded.insert(key) }
@@ -23,6 +26,7 @@ final class AppModel {
     let settings: AppSettings
     let panel = PanelState()
     private let notifier = Notifier()
+    private let closer = Closer()
     private var ledger = NotificationLedger()
     private var loop: Task<Void, Never>?
 
@@ -48,11 +52,40 @@ final class AppModel {
 
     func setPanelOpen(_ open: Bool) {
         panelIsOpen = open
+        if !open, !panel.isClosing {
+            panel.pendingClose = nil
+            panel.closeResult = nil
+        }
         if open {
             // Reinicia o ciclo para atualizar agora e passar ao intervalo curto.
             loop?.cancel()
             loop = nil
             start()
+        }
+    }
+
+    func requestClose(_ target: CloseTarget) {
+        panel.closeResult = nil
+        panel.pendingClose = target
+    }
+
+    func confirmClose() {
+        guard let target = panel.pendingClose, let dashboard, !panel.isClosing else { return }
+        panel.isClosing = true
+        Task {
+            let outcome = await closer.perform(target, dashboard: dashboard)
+            panel.isClosing = false
+            panel.pendingClose = nil
+            panel.closeResult = Self.message(for: outcome)
+            await refresh()
+        }
+    }
+
+    private static func message(for outcome: CloseOutcome) -> String {
+        switch outcome {
+        case .closed: "Fechado."
+        case .stillOpen: "Continua aberto. Pode estar aguardando você salvar um arquivo."
+        case let .failed(reason): reason
         }
     }
 

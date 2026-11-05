@@ -4,6 +4,7 @@ import SwiftUI
 struct McpSectionView: View {
     let servers: [McpServerGroup]
     let sessions: [ClaudeSession]
+    let onClose: (CloseTarget) -> Void
 
     var body: some View {
         ForEach(servers) { server in
@@ -14,12 +15,18 @@ struct McpSectionView: View {
                     Text(server.copies.count == 1 ? "1 cópia" : "\(server.copies.count) cópias")
                         .font(.caption).foregroundStyle(.secondary)
                     Text(MemoryFormat.bytes(server.bytes)).monospacedDigit()
+                    CloseRowButton(title: server.copies.count > 1 ? "Fechar todos" : "Fechar") {
+                        onClose(.mcpServer(name: server.name, copies: server.copies))
+                    }
                 }
                 ForEach(server.copies, id: \.rootPid) { copy in
                     HStack {
                         Text(sessionName(copy.sessionPid)).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                         Spacer(minLength: 8)
                         Text(MemoryFormat.bytes(copy.bytes)).font(.caption).monospacedDigit().foregroundStyle(.secondary)
+                        if server.copies.count > 1 {
+                            CloseRowButton { onClose(.mcpCopy(copy)) }
+                        }
                     }
                     .padding(.leading, 10)
                 }
